@@ -24,7 +24,6 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import hljs from 'highlight.js';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -102,15 +101,7 @@ const NAVIGATION: NavSection[] = [
 
 const CodeBlock = ({ code, language = 'json' }: { code: string; language?: string }) => {
   const [copied, setCopied] = useState(false);
-
-  const highlightedCode = React.useMemo(() => {
-    try {
-      const result = hljs.highlight(code.trim(), { language: language === 'json' ? 'json' : language });
-      return result.value;
-    } catch (e) {
-      return code.trim();
-    }
-  }, [code, language]);
+  const safeCode = code.trim();
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(code);
@@ -129,10 +120,7 @@ const CodeBlock = ({ code, language = 'json' }: { code: string; language?: strin
         </button>
       </div>
       <pre className="!bg-navy-900 border border-white/5 rounded-xl p-4 overflow-x-auto text-sm font-mono scrollbar-thin scrollbar-thumb-white/10">
-        <code 
-          className={cn("hljs", language)}
-          dangerouslySetInnerHTML={{ __html: highlightedCode }}
-        />
+        <code className={cn("hljs", language)}>{safeCode}</code>
       </pre>
     </div>
   );
@@ -351,39 +339,52 @@ const QuickstartSection = () => (
 
     <div className="space-y-12">
       {[
-        { 
-          step: 1, 
-          title: 'Get API keys', 
-          desc: 'Generate your `sk_live_...` keys from the Conduit developer dashboard.',
-          code: 'Authorization: Bearer sk_live_51P8yU8... '
+        {
+          step: 1,
+          title: 'Get API keys',
+          desc: 'Generate your API keys in the Conduit developer dashboard and store them in a server-side secret manager.',
+          code: 'Authorization: Bearer <api_key>'
         },
-        { 
-          step: 2, 
-          title: 'Create workspace', 
+        {
+          step: 2,
+          title: 'Create workspace',
           desc: 'Initialize a project context for your production environment.',
-          code: 'POST /v1/workspaces\n{\n  "name": "Production Main",\n  "environment": "production"\n}'
+          code: `POST /v1/workspaces
+{
+  "name": "Production Main",
+  "environment": "production"
+}`
         },
-        { 
-          step: 3, 
-          title: 'Fetch dashboard summary', 
+        {
+          step: 3,
+          title: 'Fetch dashboard summary',
           desc: 'Get an overview of your current health state.',
-          code: 'GET /v1/dashboard/summary\n\n{\n  "health_score": 98,\n  "active_incidents": 0\n}'
+          code: `GET /v1/dashboard/summary
+
+{
+  "health_score": 98,
+  "active_incidents": 0
+}`
         },
-        { 
-          step: 4, 
-          title: 'Register Webhooks', 
+        {
+          step: 4,
+          title: 'Register Webhooks',
           desc: 'Stay informed about critical rail failures.',
-          code: 'POST /v1/webhooks\n{\n  "url": "https://hooks.myapp.com/conduit",\n  "events": ["incident.triggered"]\n}'
+          code: `POST /v1/webhooks
+{
+  "url": "https://hooks.myapp.com/conduit",
+  "events": ["incident.triggered"]
+}`
         },
-        { 
-          step: 5, 
-          title: 'Real-time WebSocket', 
+        {
+          step: 5,
+          title: 'Real-time WebSocket',
           desc: 'Establish a streaming connection for sub-second updates.',
           code: 'wss://api.conduit.fin/v1/realtime'
         },
-        { 
-          step: 6, 
-          title: 'Trigger your first Auto-fix', 
+        {
+          step: 6,
+          title: 'Trigger your first Auto-fix',
           desc: 'Remediate a test rail failure to verify connectivity.',
           code: 'POST /v1/incidents/inc_test_123/auto-fix'
         }
@@ -479,7 +480,7 @@ const DashboardSection = () => (
   "data": {
     "health_score": 91,
     "health_status": "healthy",
-    "aum_at_risk": 820000000,
+    "aum_at_risk": "redacted",
     "active_incidents": 1,
     "active_incidents_p1": 0,
     "active_incidents_p2": 1,
@@ -527,10 +528,10 @@ const IncidentSection = () => (
     "title": "UPI p95 latency spike (HDFC Bank)",
     "rail": "upi",
     "started_at": "2026-05-01T01:58:10Z",
-    "aum_at_risk": 410000000,
+    "aum_at_risk": "redacted",
     "revenue_impact": {
-      "rupees_lost_estimate": 125000,
-      "rupees_protected": 350000
+      "rupees_lost_estimate": "redacted",
+      "rupees_protected": "redacted"
     }
   }]
 }`}
@@ -575,8 +576,8 @@ const RevenueSection = () => (
   "request_id": "req_01HZXL8R7A",
   "data": {
     "rupees_protected": 2450000,
-    "rupees_lost": 610000,
-    "rupees_at_risk": 1840000,
+    "rupees_lost": "redacted",
+    "rupees_at_risk": "redacted",
     "time_window": "last_24h",
     "protection_rate": 0.8006,
     "top_drivers": [
@@ -584,9 +585,9 @@ const RevenueSection = () => (
         "driver": "UPI latency spike (HDFC)",
         "rail": "upi",
         "partner": "bank_hdfc",
-        "rupees_lost": 320000,
+        "rupees_lost": "redacted",
         "incidents": ["inc_7F3k2"],
-        "auto_fix_saved": 180000
+        "auto_fix_saved": "redacted"
       }
     ]
   }
@@ -605,7 +606,7 @@ const RevenueSection = () => (
         "partner": "bank_hdfc",
         "error_class": "TIMEOUT",
         "failure_rate": 0.0342,
-        "rupees_lost_estimate": 210000
+        "rupees_lost_estimate": "redacted"
       }
     ]
   }
@@ -669,7 +670,7 @@ const PartnersSection = () => (
     "blast_radius": {
       "bank_hdfc_failure_impact": {
         "rails_affected": ["upi", "aa"],
-        "aum_at_risk": 820000000
+        "aum_at_risk": "redacted"
       }
     }
   }
@@ -690,8 +691,7 @@ const WebhookSection = () => (
       path="/v1/webhooks/incidents"
       description="Register a new webhook listener."
       request={`{
-  "url": "https://myapp.com/api/conduit-hook",
-  "secret": "whsec_..."
+  "url": "https://myapp.com/api/conduit-hook"
 }`}
     />
 
@@ -715,7 +715,7 @@ const WebhookSection = () => (
     </div>
 
     <Callout type="warning" title="Security Requirement">
-      You MUST verify the <code className="text-amber-warning font-mono">Conduit-Signature</code> header using your webhook secret to ensure authenticity.
+      Store the webhook secret server-side and verify the <code className="text-amber-warning font-mono">Conduit-Signature</code> header before acting on any event payload.
     </Callout>
   </section>
 );
@@ -738,8 +738,7 @@ const RealtimeSection = () => (
       description="Subscription message to join a feed topic."
       request={`{
   "action": "subscribe",
-  "topic": "metrics.latency.upi",
-  "auth_token": "bearer_..."
+  "topic": "metrics.latency.upi"
 }`}
     />
 
@@ -755,6 +754,7 @@ const RealtimeSection = () => (
     <Callout type="info" title="Frontend Tips">
       <ul className="list-disc list-inside space-y-2 mt-2">
         <li>Use a persistent worker or SharedWorker to manage the WS connection.</li>
+        <li>Authenticate the socket with a short-lived bearer token in the connection handshake or Authorization header.</li>
         <li>Implement exponential backoff for reconnection logic.</li>
         <li>Buffer updates for 250ms to prevent UI re-render jitters during spikes.</li>
       </ul>
@@ -1196,12 +1196,12 @@ const OAuthSection = () => (
   "grant_type": "authorization_code",
   "code": "auth_code_7721",
   "client_id": "cid_412",
-  "client_secret": "csec_984"
+  "code_verifier": "<pkce_verifier>"
 }`} />
       </div>
 
       <Callout type="info" title="Token Expiration">
-        Refresh tokens are valid for 30 days. Access tokens must be refreshed every 60 minutes.
+        Refresh tokens are valid for 30 days. Access tokens must be refreshed every 60 minutes. Keep client secrets only on a confidential server and never expose them in browser, desktop, or mobile clients.
       </Callout>
     </div>
   </section>
